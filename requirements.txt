@@ -4,7 +4,7 @@ numpy
 psycopg2-binary
 sqlalchemy
 plotly
-scikit-learn
+scikit-learn==1.5.1
 joblib
 imblearn
 shap
