@@ -1,0 +1,19 @@
+name: credit-risk-env
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - streamlit
+    - pandas
+    - numpy
+    - psycopg2-binary
+    - sqlalchemy
+    - plotly
+    - scikit-learn==1.5.1
+    - joblib
+    - imbalanced-learn
+    - shap
+    - matplotlib
+    - Pillow
