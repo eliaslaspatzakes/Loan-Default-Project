@@ -23,11 +23,10 @@ st.set_page_config(
 # ------------------------------------------------------------------
 
 # 1. Database Connection Caching
-# We use @st.cache_resource for objects that should persist across reruns (like DB connections)
-# In app.py
+
 @st.cache_resource
 def get_db_analytics():
-    # Paste your NEON string here (inside the quotes)
+   
     db_string = "postgresql://neondb_owner:npg_i1AQYKlbe9DZ@ep-jolly-moon-agmku3u0-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     return AnalyticsDashboard(db_string)
 
@@ -208,6 +207,7 @@ if selection == "1. SQL Analysis":
         
         if os.path.exists("data map.gif"):
             # Create 3 columns: [1 part spacer, 2 parts image, 1 part spacer]
+            # This makes the image take up 50% of the total width (2/4)
             c_left, c_center, c_right = st.columns([1, 2, 1])
             
             with c_center:
