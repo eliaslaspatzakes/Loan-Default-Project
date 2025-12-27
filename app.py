@@ -195,9 +195,6 @@ if selection == "0. Project Overview":
             st.subheader("5. Risk Playground")
             st.write("Ένα ζωντανό demo όπου αναλαμβάνετε το ρόλο του Τραπεζικού Υπαλλήλου, εισάγετε νέα στοιχεία πελάτη και λαμβάνετε άμεσα το Σκορ Κινδύνου.")
             
-# ------------------------------------------------------------------
-# PAGE 1: SQL ANALYSIS
-# ------------------------------------------------------------------
 if selection == "1. SQL Analysis":
     st.title("🗄️ Phase 1: Database Exploration (SQL)")
     st.markdown("---")
@@ -206,12 +203,11 @@ if selection == "1. SQL Analysis":
     Παρακάτω μπορείτε να δείτε τη δομή της βάσης δεδομένων και τα αποτελέσματα των ερωτημάτων.
     """)
 
-    # --- NEW ADDITION: ERD DIAGRAM (CENTERED & RESIZED) ---
+    # --- ERD DIAGRAM (CENTERED & RESIZED) ---
     with st.expander("🗺️ Προβολή Διαγράμματος Βάσης Δεδομένων (ERD)", expanded=True):
         
         if os.path.exists("data map.gif"):
             # Create 3 columns: [1 part spacer, 2 parts image, 1 part spacer]
-            # This makes the image take up 50% of the total width (2/4)
             c_left, c_center, c_right = st.columns([1, 2, 1])
             
             with c_center:
@@ -261,7 +257,6 @@ FROM loan;
                 corr_val = df_q2['correlation'].iloc[0]
                 st.metric(label="Correlation: Unemployment & Default", value=corr_val)
                 
-                # Logic we added earlier
                 if abs(corr_val) < 0.1:
                     st.info("💡 **Insight:** Η συσχέτιση είναι πρακτικά μηδενική.")
                 else:
@@ -323,7 +318,20 @@ SELECT ROUND(CORR(Duration,Default_rate)::NUMERIC,2) * 100 AS correlation FROM d
             st.plotly_chart(fig_q4, use_container_width=True)
 
         with st.expander("See SQL Code"):
-            st.code("""SELECT ... (Query 4 Code) ...""", language='sql')
+            st.code("""
+SELECT 
+    CASE 
+        WHEN age < 21 THEN 'Under 21'
+        WHEN age BETWEEN 21 AND 40 THEN '21-40'
+        WHEN age BETWEEN 41 AND 60 THEN '41-60'
+        ELSE 'Over 60'
+    END AS age_group,
+    SUM(CASE WHEN gender = 'Male' THEN 1 ELSE 0 END) AS num_males,
+    SUM(CASE WHEN gender = 'Female' THEN 1 ELSE 0 END) AS num_females
+FROM client
+GROUP BY age_group
+ORDER BY age_group;
+            """, language='sql')
 
     st.markdown("---")
 
@@ -343,7 +351,19 @@ SELECT ROUND(CORR(Duration,Default_rate)::NUMERIC,2) * 100 AS correlation FROM d
             st.plotly_chart(fig_q5, use_container_width=True)
 
         with st.expander("See SQL Code"):
-             st.code("""SELECT ... (Query 5 Code) ...""", language='sql')
+             st.code("""
+SELECT 
+    d."District_name" AS district,
+    COUNT(c.card_id) AS gold_cards
+FROM card AS c
+JOIN disp AS di ON c.disp_id = di.disp_id
+JOIN client AS cl ON di.client_id = cl.client_id
+JOIN district AS d ON cl.district_id = d."District_code"
+WHERE c.type = 'gold'
+GROUP BY d."District_name"
+ORDER BY gold_cards DESC
+LIMIT 10;
+             """, language='sql')
 
     with row3_col2:
         # --- Query 6: Client Loyalty ---
@@ -358,7 +378,25 @@ SELECT ROUND(CORR(Duration,Default_rate)::NUMERIC,2) * 100 AS correlation FROM d
             st.plotly_chart(fig_q6, use_container_width=True)
 
         with st.expander("See SQL Code"):
-             st.code("""WITH client_first_acc ... (Query 6 Code) ...""", language='sql')
+             st.code("""
+WITH client_first_acc AS (
+    SELECT 
+        c.client_id,
+        EXTRACT(YEAR FROM MIN(a.date)) AS join_year,
+        MIN(EXTRACT(YEAR FROM a.date)) - EXTRACT(YEAR FROM c.birth_date) AS age_at_joining
+    FROM client c
+    JOIN disp d ON c.client_id = d.client_id
+    JOIN account a ON d.account_id = a.account_id
+    WHERE d.type = 'OWNER'
+    GROUP BY c.client_id, c.birth_date
+)
+SELECT 
+    join_year,
+    ROUND(AVG(age_at_joining), 1) AS avg_age_joined
+FROM client_first_acc
+GROUP BY join_year
+ORDER BY join_year;
+             """, language='sql')
 
     st.markdown("---")
 
@@ -378,7 +416,21 @@ SELECT ROUND(CORR(Duration,Default_rate)::NUMERIC,2) * 100 AS correlation FROM d
             st.plotly_chart(fig_q7, use_container_width=True)
 
         with st.expander("See SQL Code"):
-            st.code("""SELECT ... (Query 7 Code) ...""", language='sql')
+            st.code("""
+SELECT
+    CASE 
+        WHEN l.status IN ('B', 'D') THEN 'Defaulter'
+        WHEN l.status IN ('A', 'C') THEN 'Good Loan'
+    END AS loan_category,
+    ROUND(AVG(t_min.min_bal)::NUMERIC, 2) AS avg_minimum_balance_ever
+FROM loan l
+JOIN (
+    SELECT account_id, MIN(balance) as min_bal 
+    FROM trans 
+    GROUP BY account_id
+) t_min ON l.account_id = t_min.account_id
+GROUP BY loan_category;
+            """, language='sql')
 
     with row4_col2:
         # --- Query 8: Cash vs Card ---
@@ -394,7 +446,18 @@ SELECT ROUND(CORR(Duration,Default_rate)::NUMERIC,2) * 100 AS correlation FROM d
             st.plotly_chart(fig_q8, use_container_width=True)
 
         with st.expander("See SQL Code"):
-             st.code("""SELECT ... (Query 8 Code) ...""", language='sql')
+             st.code("""
+SELECT 
+    SUM(CASE 
+        WHEN operation IN ('withdrawal in cash', 'remittance to another bank') THEN amount 
+        ELSE 0 
+    END) AS cash_withdrawal_amount,
+    SUM(CASE 
+        WHEN operation = 'credit card withdrawal' THEN amount 
+        ELSE 0 
+    END) AS card_withdrawal_amount
+FROM trans;
+             """, language='sql')
 
     st.markdown("---")
 
