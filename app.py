@@ -22,20 +22,18 @@ st.set_page_config(
 # OPTIMIZED RESOURCE LOADING (Caching)
 # ------------------------------------------------------------------
 
-# 1. Database Connection Caching
-
 @st.cache_resource
 def get_db_analytics():
    
     db_string = "postgresql://neondb_owner:npg_i1AQYKlbe9DZ@ep-jolly-moon-agmku3u0-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     return AnalyticsDashboard(db_string)
 
-# Initialize the analytics object using the cached function
+
 try:
     analytics = get_db_analytics()
 except Exception as e:
-    st.error(f"❌ Database Connection Failed: {e}")
-    st.stop() # Stop execution if DB fails
+    st.error(f"Database Connection Failed: {e}")
+    st.stop()
 
 # 2. Model Loading Caching
 @st.cache_resource
@@ -53,7 +51,7 @@ def load_model():
         st.error(f"⚠️ Error loading model: {e}")
         return None
 
-# Load the model into a variable
+
 data = load_model()
 
 # ------------------------------------------------------------------
